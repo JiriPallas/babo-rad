@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+<title>Od SSM po SUV</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Courier+Prime:wght@400;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&display=swap">
+<style>
+/* Layout: kádrový spis — list papíru s razítky; vlevo scéna, vpravo karta občana; nahoře časová osa epoch */
+:root{
+  --paper:#DFE3D8; --sheet:#F3F4EE; --ink:#1D2420; --muted:#5B645C; --rule:#BFC6B6;
+  --stamp:#5A3E8E; --plus:#2E6B3A; --minus:#A8261D;
+  --c-norm:#A8261D; --c-rev:#2B5AA6; --c-priv:#946410; --c-dnes:#1F6F66;
+  --era:var(--c-norm);
+  --f-display:"Big Shoulders Display", Impact, "Arial Narrow", sans-serif;
+  --f-body:"Literata", Georgia, "Times New Roman", serif;
+  --f-type:"Courier Prime", "Courier New", Courier, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#141915; --sheet:#1D231E; --ink:#E3E8DE; --muted:#9BA59B; --rule:#343D35;
+  --stamp:#B59DEB; --plus:#7CC48A; --minus:#EE7A6F;
+  --c-norm:#E2685D; --c-rev:#7EA6EC; --c-priv:#D9A441; --c-dnes:#5FC0B3; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#141915; --sheet:#1D231E; --ink:#E3E8DE; --muted:#9BA59B; --rule:#343D35;
+  --stamp:#B59DEB; --plus:#7CC48A; --minus:#EE7A6F;
+  --c-norm:#E2685D; --c-rev:#7EA6EC; --c-priv:#D9A441; --c-dnes:#5FC0B3; color-scheme:dark}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55}
+body[data-era="rev"]{--era:var(--c-rev)} body[data-era="priv"]{--era:var(--c-priv)} body[data-era="dnes"]{--era:var(--c-dnes)}
+.wrap{max-width:1080px;margin:0 auto;padding-block:28px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:22px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 24px}
+h1{font-family:var(--f-display);font-weight:900;text-transform:uppercase;font-size:clamp(2.6rem,8vw,4.8rem);line-height:.86;margin:0;letter-spacing:.01em}
+h1 span{color:var(--era);transition:color .4s}
+.sub{font-family:var(--f-type);font-size:.85rem;color:var(--muted);max-width:34ch;margin:0}
+.eras{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.era{font-family:var(--f-type);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding-top:8px;border-top:4px solid var(--rule);min-width:0}
+.era b{display:block;font-weight:700;font-size:.8rem;color:var(--ink)}
+.era.done{border-top-color:var(--muted)}
+.era.on{border-top-color:var(--era)} .era.on b{color:var(--era)}
+.era.on.rev{border-image:linear-gradient(90deg,#fff 0 33%,var(--c-rev) 33% 66%,var(--c-norm) 66%) 1;border-top-width:4px;border-top-style:solid}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:22px;align-items:start}
+.card{background:var(--sheet);border:1px solid var(--rule);padding:30px clamp(18px,4vw,36px) 32px;position:relative;min-width:0}
+.folio{font-family:var(--f-type);font-size:.75rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;border-bottom:1px dashed var(--rule);padding-bottom:10px;margin-bottom:18px;padding-right:110px}
+.stamp{position:absolute;top:18px;right:18px;font-family:var(--f-type);font-weight:700;color:var(--stamp);border:3px double var(--stamp);padding:4px 10px;font-size:1.35rem;transform:rotate(-7deg);opacity:.88;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.8rem,4.5vw,2.4rem);line-height:1;margin:0 0 14px;text-wrap:balance;text-transform:uppercase;letter-spacing:.01em}
+.txt{max-width:62ch;margin:0 0 22px;font-size:1.04rem}
+.choices{display:grid;gap:10px}
+.ch{all:unset;box-sizing:border-box;display:grid;gap:3px;padding:13px 16px;border:1.5px solid var(--ink);cursor:pointer;transition:background .15s,color .15s}
+.ch b{font-weight:600;font-size:1.02rem}
+.ch small{font-family:var(--f-type);font-size:.8rem;color:var(--muted)}
+.ch:hover:not([aria-disabled="true"]),.ch:focus-visible{background:var(--ink);color:var(--sheet)}
+.ch:hover:not([aria-disabled="true"]) small,.ch:focus-visible small{color:var(--sheet);opacity:.8}
+.ch:focus-visible{outline:3px solid var(--era);outline-offset:2px}
+.ch[aria-disabled="true"]{opacity:.42;cursor:not-allowed;border-style:dashed}
+.ch.picked{background:var(--ink);color:var(--sheet)} .ch.picked small{color:var(--sheet)}
+.choices.locked .ch:not(.picked){opacity:.3;pointer-events:none}
+.res{margin-top:22px;padding-top:20px;border-top:1px dashed var(--rule);display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:start}
+.res.nodie{grid-template-columns:minmax(0,1fr)}
+.res p{margin:0 0 10px;max-width:60ch}
+.rollinfo{font-family:var(--f-type);font-size:.82rem;color:var(--muted);margin-bottom:6px}
+.die{width:64px;height:64px;border-radius:12px;background:var(--sheet);border:2px solid var(--ink);display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:9px;gap:2px;box-shadow:3px 3px 0 var(--ink)}
+.die i{border-radius:50%;background:transparent;margin:2px}
+.die i.p{background:var(--era)}
+.die.spin{animation:wob .12s linear infinite}
+@keyframes wob{50%{transform:rotate(9deg) translateY(-2px)}}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 14px}
+.chip{font-family:var(--f-type);font-size:.78rem;padding:2px 8px;border:1px solid currentColor;font-variant-numeric:tabular-nums}
+.chip.up{color:var(--plus)} .chip.down{color:var(--minus)}
+.next{all:unset;cursor:pointer;font-family:var(--f-type);font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--era);color:var(--sheet);padding:10px 18px;font-size:.9rem}
+.next:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+aside{display:grid;gap:14px;background:var(--sheet);border:1px solid var(--rule);padding:20px;min-width:0}
+.idhead{font-family:var(--f-type);font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.idname{font-family:var(--f-display);font-weight:700;font-size:1.6rem;line-height:1;text-transform:uppercase;margin-top:2px}
+.stat{display:grid;gap:5px}
+.stat .l{display:flex;justify-content:space-between;font-family:var(--f-type);font-size:.78rem;text-transform:uppercase;letter-spacing:.06em}
+.stat .l span:last-child{font-variant-numeric:tabular-nums;font-weight:700}
+.bar{display:grid;grid-template-columns:repeat(10,1fr);gap:2px}
+.bar i{height:9px;background:var(--rule)}
+.bar i.f{background:var(--era)}
+.stat.off{opacity:.4}
+.money{font-family:var(--f-display);font-weight:700;font-size:1.9rem;font-variant-numeric:tabular-nums;line-height:1}
+.flags{display:flex;flex-wrap:wrap;gap:6px}
+.flag{font-family:var(--f-type);font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--stamp);border:1.5px solid var(--stamp);padding:1px 6px}
+.start label{font-family:var(--f-type);font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:block;margin-bottom:6px}
+.start input{font:inherit;font-size:1.1rem;padding:10px 12px;border:1.5px solid var(--ink);background:var(--paper);color:var(--ink);width:min(100%,320px);box-sizing:border-box}
+.start input:focus-visible{outline:3px solid var(--era);outline-offset:1px}
+.rules{font-size:.95rem;color:var(--muted);max-width:60ch;margin:18px 0 22px;padding-left:18px}
+.rules li{margin-bottom:4px}
+.verdict{font-family:var(--f-display);font-weight:900;font-size:clamp(2rem,6vw,3rem);line-height:.95;text-transform:uppercase;color:var(--era);margin:6px 0 10px;text-wrap:balance}
+.rows{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 18px;font-size:.95rem;margin:18px 0}
+.rows dt{font-family:var(--f-type);font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding-top:2px}
+.rows dd{margin:0}
+.bigstamps{display:flex;flex-wrap:wrap;gap:14px;margin:18px 0}
+.bigstamps span{font-family:var(--f-type);font-weight:700;color:var(--stamp);border:3px double var(--stamp);padding:4px 10px;text-transform:uppercase;letter-spacing:.05em;font-size:.9rem}
+.bigstamps span:nth-child(odd){transform:rotate(-4deg)} .bigstamps span:nth-child(even){transform:rotate(3deg)}
+.log{list-style:none;padding:0;margin:8px 0 22px;display:grid;gap:8px;max-width:64ch}
+.log li{display:grid;grid-template-columns:3.4em minmax(0,1fr);gap:10px;font-size:.93rem}
+.log li span{font-family:var(--f-type);font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+h3{font-family:var(--f-type);font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:22px 0 4px}
+@media (max-width:820px){
+  .grid{grid-template-columns:minmax(0,1fr)}
+  aside{order:-1;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px;padding:16px}
+  aside .full{grid-column:1/-1}
+  .money{font-size:1.5rem}
+}
+@media (max-width:480px){.era{font-size:.62rem}.era b{font-size:.7rem}.res{grid-template-columns:minmax(0,1fr)}.stamp{font-size:1.05rem}}
+@media (prefers-reduced-motion:reduce){.die.spin{animation:none}*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Od SSM<br><span>po SUV</span></h1>
+    <p class="sub">Hra o jednom českém životě. Od normalizace přes sametovou revoluci a kupóny až po dnešek.</p>
+  </header>
+  <nav class="eras" id="eras" aria-label="Epochy"></nav>
+  <div class="grid">
+    <main class="card" id="card" aria-live="polite"></main>
+    <aside id="aside"></aside>
+  </div>
+</div>
+
+<script>
+const ERAS=[{k:'norm',n:'Normalizace',y:'1971–1988'},{k:'rev',n:'Revoluce',y:'1989–1991'},{k:'priv',n:'Devadesátky',y:'1991–1999'},{k:'dnes',n:'Dnešek',y:'2025'}];
+const NAMES={status:'Postavení',cons:'Svědomí',risk:'Pozornost StB',money:'Úspory'};
+const FLAGS={ssm:'SSM',udavac:'Udavač',vs:'VŠ',delnik:'Dělník',chata:'Chata',charta:'Charta 77',anti:'Anticharta',ksc:'KSČ',agent:'Agent StB',emigrace:'Exil',kriminal:'Kriminál',nomenklatura:'Nomenklatura',revoluce:'Listopad 89',prevlekac:'Nový kabát',navrat:'Návrat',politik:'Poslanec',odhalen:'Na seznamech',hospoda:'Hospoda',baron:'Privatizace',kupony:'Kupóny',restituce:'Restituce',insider:'Známí'};
+let S, CH=[], phase='start', busy=false;
+
+function newState(name){return {name:name||'Jan Novák',i:0,status:3,cons:5,risk:0,money:5,f:{},log:[],entered:{},res:null,vote90:null,voteNow:null,car:null,trip:null,income:0}}
+function fx(o){for(const k in o){const old=S[k];let v=old+o[k];v=k==='money'?Math.max(0,Math.round(v)):Math.max(0,Math.min(10,v));S[k]=v;const d=v-old;if(d)CH.push([k,d]);}}
+function flag(n){S.f[n]=true}
+const val=(x)=>typeof x==='function'?x(S):x;
+
+const VOTE90=[
+ ['Svoboda, trh, návrat do Evropy','Konec vlády jedné strany, rychlý přechod k tržnímu hospodářství, vstup do evropských institucí.'],
+ ['Reformovaný socialismus','Zachovat státní podniky a plnou zaměstnanost, stranu reformovat zevnitř.'],
+ ['Křesťanské hodnoty','Rodina a víra, vrácení církevního majetku, víc pravomocí obcím.'],
+ ['Samospráva pro Moravu a Slezsko','Zemské uspořádání státu, víc pravomocí regionům.']];
+const VOTENOW=[
+ ['Méně státu, nižší daně','Nižší daně a odvody, méně regulací, přijetí eura.'],
+ ['Silný sociální stát','Vyšší důchody, regulované ceny energií, stát garantuje práci.'],
+ ['Klima a moderní stát','Ochrana klimatu, digitální úřady, rozšiřování občanských práv.'],
+ ['Suverenita a referenda','Přísná migrační politika, celostátní referenda, méně pravomocí pro EU.'],
+ ['Řídit stát jako firmu','Silný lídr, méně politických sporů, rychlé rozhodování.']];
+
+const SC=[
+{id:'ssm',era:'norm',year:1971,title:'Odznak na klopu',
+ text:'Je ti patnáct a nastupuješ na gymnázium. Třídní učitelka rozdává přihlášky do Socialistického svazu mládeže. „Kdo nevstoupí, ať si to dobře rozmyslí,“ řekne a podívá se přitom na tebe.',
+ choices:[
+  {t:'Vstoupit do SSM',d:'Jako všichni ostatní.',go:s=>{flag('ssm');fx({status:1,cons:-1});return 'Dostaneš legitimaci a odznak. Na schůzích sedíš vzadu a nikdo se tě na nic neptá.'}},
+  {t:'Nevstoupit',d:'Kostka rozhodne, jestli si toho někdo všimne.',roll:1,go:(s,r)=>{if(r<=2){fx({status:-2,cons:1});return 'Třídní si to poznamenala do posudku. Ten tě bude provázet dlouho.'}fx({cons:1});return 'Nevstoupilo vás víc a ztratili jste se v davu.'}}]},
+{id:'pavel',era:'norm',year:1973,title:'Básně na průklepáku',
+ text:'Spolužák Pavel nosí do školy samizdat, básně opsané na průklepovém papíře. Ředitel si tě zavolá do kabinetu: „Ty s ním kamarádíš. Řekni mi, odkud to má, a u přijímaček na tebe nezapomenu.“',
+ choices:[
+  {t:'Říct řediteli, co víš',d:'Přijímačky jsou za dva roky.',go:s=>{flag('udavac');fx({status:2,cons:-3});return 'Pavla ze školy vyloučí a jde do učení. Tvůj posudek je bez poskvrnky.'}},
+  {t:'Mlčet',d:'„Nic nevím, soudruhu řediteli.“',roll:1,go:(s,r)=>{if(r===1){fx({risk:2});return 'Ředitel ti nevěří a pošle hlášení dál. Někde se ti založila složka.'}fx({risk:1});return 'Ředitel tě po čtvrthodině pustí. Ten pohled, kterým tě vyprovodí, si budeš pamatovat.'}},
+  {t:'Varovat Pavla',d:'Ať si dá pozor.',roll:1,go:(s,r)=>{fx({cons:2,risk:1});if(r===1){fx({risk:2});return 'Pavel básně schová, ale někdo vás viděl spolu. Teď jsi v hledáčku i ty.'}return 'Pavel básně schová. Domovní prohlídka u něj nic nenajde.'}}]},
+{id:'prijimacky',era:'norm',year:1975,title:'Kádrový posudek',
+ text:s=>'Maturuješ. O přijetí na vysokou školu nerozhodují jen znalosti, ale i posudek ze školy a z uličního výboru. Tvé postavení je '+s.status+' z 10.',
+ choices:[
+  {t:'Podat přihlášku na vysokou',d:s=>{const m=Math.floor((s.status-4)/2);return 'Potřebuješ hodit aspoň 4. Postavení ti dává '+(m>=0?'+':'')+m+'.'},roll:s=>Math.floor((s.status-4)/2),go:(s,r,t)=>{if(t>=4){flag('vs');fx({status:1});return 'Přijali tě. Za pět let z tebe bude inženýr.'}flag('delnik');return 'Nepřijali tě „z kapacitních důvodů“. Jdeš pracovat na stavbu.'}},
+  {t:'Jít rovnou pracovat',d:'Dělnická profese, jistý plat.',go:s=>{flag('delnik');fx({money:8});return 'Nastoupíš jako zedník u Pozemních staveb. Výplata je slušná a první peníze odkládáš na vkladní knížku.'}}]},
+{id:'stavba',era:'norm',year:1976,title:'Kdo nekrade, okrádá rodinu',
+ text:s=>(s.f.vs?'Při studiu chodíš na brigády na stavbu sídliště.':'Na stavbě sídliště míchaš maltu a zdíš paneláky.')+' Za plotem leží palety cihel a pytle cementu. Polovina party si večer odváží materiál na chatu. Mistr mávne rukou: „Je to všech, tak je to i naše.“',
+ choices:[
+  {t:'Odvézt si cement a cihly na chatu',d:'Hrozí kontrola lidové kontroly.',roll:1,go:(s,r)=>{flag('chata');if(r===1){fx({money:5,risk:1,status:-1});return 'Přijela kontrola. Zaplatíš pokutu a v kádrovém spisu máš poznámku. Chata ale roste.'}fx({money:15});return 'Za dva roky stojí u Sázavy chata, postavená z materiálu národního podniku.'}},
+  {t:'Nekrást',d:'Chatu postavíš poctivě, nebo vůbec.',go:s=>{fx({cons:1});return 'Kolegové se ti smějí. Chatu nemáš, ale v noci spíš klidně.'}},
+  {t:'Nahlásit, že se krade',d:'Mistr to nebude rád slyšet.',go:s=>{fx({status:1});return 'Vedení tě na schůzi pochválí. Parta s tebou od té doby nemluví a mistr ti dává nejhorší práci.'}}]},
+{id:'charta',era:'norm',year:1977,title:'Charta, nebo Anticharta',
+ text:'Leden 1977. Svobodná Evropa čte Prohlášení Charty 77: vláda má dodržovat lidská práva, ke kterým se sama zavázala. Rudé právo nazve signatáře „ztroskotanci a samozvanci“. Kamarád ti potají ukáže text Charty. O pár týdnů později je v práci schůze a na stole leží Provolání, kterému se bude říkat Anticharta.',
+ choices:[
+  {t:'Podepsat Chartu 77',d:'Velké riziko, čisté svědomí.',go:s=>{flag('charta');fx({cons:4,risk:4,status:-3});return (s.f.vs?'Ze školy tě vyhodí. Nastoupíš jako topič v kotelně':'Mistr tě přeřadí na noční směny')+' a před domem začne parkovat auto StB.'}},
+  {t:'Podepsat Antichartu',d:'Podpis na schůzi, potlesk.',go:s=>{flag('anti');fx({status:2,cons:-3});return 'Podepíšeš Provolání. Tvé jméno vyjde v novinách mezi „pracujícími, kteří odsuzují rozvraceče“.'}},
+  {t:'Vzít si na den schůze nemocenskou',d:'Kostka rozhodne, jestli to projde.',roll:1,go:(s,r)=>{if(r<=3){flag('anti');fx({status:1,cons:-2});return 'Schůzi přeložili na den, kdy už jsi zdravý. Podepsat musíš stejně.'}return 'Prošlo to. Na tvůj podpis se už nikdo nezeptal.'}}]},
+{id:'strana',era:'norm',year:1979,title:'Máš perspektivu, soudruhu',if:s=>!s.f.charta,
+ text:'Předseda základní organizace KSČ tě pozve do kanceláře: „Máš perspektivu. Strana potřebuje mladé kádry. Kandidátská doba je jen rok.“',
+ choices:[
+  {t:'Vstoupit do KSČ',d:'Otevře se ti kariéra.',go:s=>{flag('ksc');fx({status:3,cons:-2});return 'Dostaneš stranickou legitimaci. Za rok vedeš oddělení a máš poukaz na rekreaci ROH.'}},
+  {t:'Slušně odmítnout',d:'„Ještě na to nejsem zralý.“',roll:1,go:(s,r)=>{if(r<=2){fx({status:-1,cons:1});return 'Předseda to pochopí, ale při rozdělování prémií na tebe zapomene.'}fx({cons:1});return 'Nikdo to neřeší. Zůstáváš na svém místě.'}}]},
+{id:'stb',era:'norm',year:1981,title:'Pozvání na kávu',if:s=>(s.risk>=3||s.f.charta)&&!s.f.kriminal,
+ text:'Na vrátnici na tebe čeká pán v koženém kabátě: „Jen si popovídáme.“ V kanceláři StB v Bartolomějské ti nabídne kávu a spolupráci. Občas by ses zmínil o lidech kolem sebe. „Pomůžete sobě i dětem.“',
+ choices:[
+  {t:'Podepsat spolupráci',d:'StB tě přestane hlídat.',go:s=>{flag('agent');fx({risk:Math.min(s.risk,1)-s.risk,cons:-4,status:1});return 'Dostaneš krycí jméno. Jednou za měsíc se v kavárně scházíš s řídícím důstojníkem. Nikomu o tom neřekneš.'}},
+  {t:'Odmítnout',d:'Budou tě sledovat ještě víc.',go:s=>{fx({cons:1,risk:2});return '„Jak myslíte. My máme čas.“ V telefonu to začne podivně cvakat.'}},
+  {t:'Pokusit se emigrovat',d:'Přes Jugoslávii do Rakouska. Potřebuješ hodit aspoň 4.',roll:1,go:(s,r)=>{if(r>=4){flag('emigrace');return 'Přes známého seženeš výjezdní doložku do Jugoslávie. Z Lublaně přejdeš do Rakouska a požádáš o azyl.'}flag('kriminal');return 'Na hranicích tě zadrží. Soud tě odsoudí za pokus o nedovolené opuštění republiky.'}}]},
+{id:'jugo',era:'norm',year:1981,title:'Dovolená u moře',if:s=>s.risk<3&&!s.f.charta&&!s.f.kriminal,
+ text:'Po letech čekání dostaneš výjezdní doložku do Jugoslávie. Na pláži v Poreči potkáš Čecha, který před deseti lety utekl: „Rakousko je kousek. Rozmysli si to.“',
+ choices:[
+  {t:'Vrátit se domů',d:'Doma máš rodinu a práci.',go:s=>'Vracíš se s taškou plnou Vegety. Celý podnik ti závidí.'},
+  {t:'Přivézt zboží na prodej',d:'Džíny a kazety. Kostka rozhodne na celnici.',roll:1,go:(s,r)=>{if(r<=2){fx({risk:2,money:-3});return 'Celníci zboží zabaví a sepíšou protokol.'}fx({money:10});return 'Džíny prodáš za trojnásobek a kazety s Beatles jdou na dračku.'}},
+  {t:'Utéct na Západ',d:'Potřebuješ hodit aspoň 3.',roll:1,go:(s,r)=>{if(r>=3){flag('emigrace');return 'V noci přejdeš do Rakouska. V táboře Traiskirchen požádáš o azyl.'}flag('kriminal');return 'Jugoslávská policie tě vrátí na hranice. Doma tě čeká soud.'}}]},
+{id:'exil',era:'norm',year:1983,title:'Život v exilu',if:s=>s.f.emigrace,
+ text:'Začínáš od nuly v cizí zemi. Doma tě v nepřítomnosti odsoudili a byt propadl státu. Rodina má kvůli tobě potíže.',
+ choices:[
+  {t:'Pracovat v továrně a šetřit',d:'',go:s=>{fx({money:40});return 'Naučíš se jazyk. Po pěti letech máš vlastní byt a auto, o jakém se doma ani nesní.'}},
+  {t:'Pracovat pro Svobodnou Evropu',d:'Mluvit k lidem doma.',go:s=>{fx({money:25,cons:2});return 'V Mnichově mluvíš do mikrofonu k lidem doma. StB tě vede jako nepřítele státu.'}}]},
+{id:'reditel',era:'norm',year:1984,title:'Nabídka z okresu',if:s=>s.f.ksc&&s.status>=6&&!s.f.emigrace&&!s.f.kriminal,
+ text:'Okresní výbor strany hledá ředitele národního podniku a ty jsi na seznamu. Služební Tatra 613, byt v centru a nákupy bez front.',
+ choices:[
+  {t:'Přijmout místo ředitele',d:'Jsi na špičce.',go:s=>{flag('nomenklatura');fx({status:2,money:20,cons:-1});return 'Patříš do nomenklatury. Na prvního máje stojíš na tribuně vedle tajemníka.'}},
+  {t:'Zůstat ve stínu',d:'Čím výš, tím víc toho vidíš.',go:s=>{fx({cons:1});return 'Místo dostane kolega. Ty máš klid.'}}]},
+{id:'tuzex',era:'norm',year:1985,title:'Bony před Tuzexem',if:s=>!s.f.nomenklatura&&!s.f.emigrace&&!s.f.kriminal,
+ text:'Před Tuzexem stojí veksláci: „Bony, bony?“ Za bony se dá koupit západní zboží a na černém trhu je kurz pětkrát lepší než oficiální.',
+ choices:[
+  {t:'Koupit bony a za ně video',d:'Kostka rozhodne, jestli tě vekslák neošidí.',roll:1,go:(s,r)=>{if(r===1){fx({money:-5});return 'Vekslák ti podstrčil „rumunské bony“, bezcenné papírky. Peníze jsou pryč.'}fx({money:-3,status:1});return 'Máš doma video. Sousedé k vám chodí na Ramba.'}},
+  {t:'Začít s bony obchodovat',d:'Rychlé peníze, rychlé problémy.',roll:1,go:(s,r)=>{if(r<=2){flag('udavac');fx({risk:3});return 'Při razii tě sebere VB. Vykoupíš se tím, že prozradíš jiné veksláky.'}fx({money:20,risk:1});return 'Za rok máš víc peněz než ředitel podniku.'}},
+  {t:'Nechat to být',d:'',go:s=>'Jdeš dál. V samoobsluze zrovna přivezli banány, tak si stoupneš do fronty.'}]},
+{id:'osud',era:'norm',year:1987,title:'Kontrola z Bartolomějské',if:s=>s.risk>=5&&!s.f.kriminal&&!s.f.emigrace,
+ text:s=>'Tvoje složka u StB je tlustá. Pozornost StB je '+s.risk+' z 10. Čím je vyšší, tím víc hrozí kriminál.',
+ choices:[{t:'Hodit kostkou',d:s=>'Půjdeš do vězení, když padne méně než '+(s.risk-2)+'.',roll:1,go:(s,r)=>{if(r<s.risk-2){flag('kriminal');return 'V šest ráno zvoní u dveří. Domovní prohlídka, výslech a obvinění z podvracení republiky.'}fx({risk:-1});return 'Výslechy a předvolání, ale tentokrát tě nechají být.'}}]},
+{id:'kriminal',era:'norm',year:1988,title:'Za mřížemi',if:s=>s.f.kriminal,
+ text:'Soud trvá jedno odpoledne. Ve vězení na Borech potkáš lidi, se kterými by ses venku nesetkal: zloděje, faráře, rockery i básníky.',
+ choices:[{t:'Vydržet',d:'',go:s=>{fx({cons:2,status:-3,risk:-s.risk});return 'Pustí tě na podzim 1989, pár týdnů předtím, než se všechno změní.'}}]},
+
+{id:'listopad',era:'rev',year:1989,title:'Sedmnáctého listopadu',enter:s=>{if(!s.f.emigrace&&!s.f.kriminal)s.money+=s.status*2},
+ text:s=>s.f.emigrace?'V televizi sleduješ záběry z Národní třídy: studenti s holýma rukama proti obuškům. Za týden je na Václavském náměstí přes půl milionu lidí a zvoní klíči.':'Studentská demonstrace na Národní třídě skončí pod obušky. Za týden je na Václavském náměstí přes půl milionu lidí a zvoní klíči. Na 27. listopadu je vyhlášena generální stávka.',
+ choices:[
+  {t:'Jít do ulic',d:'Kostka rozhodne, jak to dopadne.',if:s=>!s.f.emigrace,roll:1,go:(s,r)=>{flag('revoluce');fx({cons:1});if(r===1)return 'Na Národní třídě schytáš obuškem. Jizvu na čele budeš ukazovat vnoučatům.';return 'Stojíš na Letné mezi tři čtvrtě milionem lidí a cinkáš klíči.'}},
+  {t:'Připojit se ke stávce v práci',d:'Ve dvanáct na dvě hodiny.',if:s=>!s.f.emigrace&&!s.f.kriminal,go:s=>{flag('revoluce');return 'Ve dvanáct vypnete stroje a vyjdete před bránu. Vedoucí dělá, že nic nevidí.'}},
+  {t:'Počkat doma, jak to dopadne',d:'',if:s=>!s.f.emigrace,go:s=>{fx({cons:-1});return 'Sleduješ televizi. Kdyby se to otočilo, nikdo ti nic nemůže vyčítat.'}},
+  {t:'Rychle vystoupit ze strany',d:'Trikolóru na klopu.',if:s=>s.f.ksc,go:s=>{flag('prevlekac');fx({cons:-1,status:1});return 'Stranickou legitimaci hodíš do kamen. Za týden mluvíš na schůzi Občanského fóra v podniku.'}},
+  {t:'Zajistit si v podniku pozici',d:'Než přijdou noví lidé.',if:s=>s.f.nomenklatura,go:s=>{flag('insider');fx({cons:-2});return 'Pár spisů skončí ve skartovačce. Kontakty na „lidi z ministerstva“ zůstanou. Budou se hodit.'}},
+  {t:'Hned se vrátit domů',d:'',if:s=>s.f.emigrace,go:s=>{flag('navrat');fx({status:2});return 'V prosinci přistaneš v Ruzyni. Na letišti na tebe čeká máma s kyticí.'}},
+  {t:'Zůstat v cizině',d:'',if:s=>s.f.emigrace,go:s=>{fx({money:20});return 'Domů jezdíš na návštěvy. Tvůj život je teď jinde.'}}]},
+{id:'volby90',era:'rev',year:1990,title:'První svobodné volby',vote:'vote90',
+ text:'Červen 1990, první svobodné volby po čtyřiceti letech. K urnám přijde 96 procent voličů. Na lístcích nejsou názvy stran, jen co slibují.',
+ choices:VOTE90.map(([t,d])=>({t,d,go:s=>{s.vote90=t;return 'Hodíš obálku do urny. Poprvé v životě na tvém hlasu opravdu záleží.'}}))},
+{id:'nabidka',era:'rev',year:1990,title:'Lidi jako ty potřebujeme',if:s=>s.f.charta||s.f.kriminal||s.f.navrat||(s.f.revoluce&&s.cons>=7),
+ text:'Hledají se lidé s čistým štítem, kterým ostatní věří. Nabízejí ti místo na kandidátce do Federálního shromáždění.',
+ choices:[
+  {t:'Jít do politiky',d:'',go:s=>{flag('politik');fx({status:4});return 'Zvolí tě. Hlasuješ o zákonech, o kterých jste léta jen mluvili v kuchyni.'}},
+  {t:'Zůstat v civilu',d:'',go:s=>{fx({status:1});return 'Odmítneš a vrátíš se ke svému oboru. Konečně tě nikdo nesleduje.'}}]},
+{id:'lustrace',era:'rev',year:1991,title:'Seznamy',if:s=>s.f.agent,
+ text:'Noviny zveřejní seznamy spolupracovníků StB. U novinových stánků stojí fronty a lidé v nich hledají známá jména.',
+ choices:[{t:'Hodit kostkou',d:'Najdou tam tvé jméno, když padne 1 až 3.',roll:1,go:(s,r)=>{if(r<=3){flag('odhalen');fx({status:-3});return 'Tvé jméno tam je. Sousedé přestanou zdravit a lustrace ti zavře cestu do státní správy.'}return 'Tvůj svazek skončil ve skartovačce. Na seznamu nejsi.'}}]},
+
+{id:'mala',era:'priv',year:1991,title:'Dražba hospody',
+ text:s=>'Malá privatizace. V tělocvičně základní školy se draží obchody a provozovny. Na řadě je hospoda U Zlatého soudku ve vaší ulici. Tvé úspory jsou '+s.money+' tisíc.',
+ choices:[
+  {t:'Dražit z vlastních úspor',can:s=>s.money>=20,why:'Potřebuješ aspoň 20 tisíc.',d:s=>'Potřebuješ hodit aspoň 4. Úspory ti dávají +'+(s.money>=50?2:s.money>=30?1:0)+'.',roll:s=>s.money>=50?2:s.money>=30?1:0,go:(s,r,t)=>{if(t>=4){flag('hospoda');fx({money:-20});return 'Hospoda je tvoje. První pivo načepuješ vlastní rukou.'}return 'Vydraží ji pán s kufříkem, o kterém se říká, že zbohatl na bonech.'}},
+  {t:'Půjčit si v bance a dražit',d:'Úvěr. Kostka rozhodne.',roll:1,go:(s,r)=>{if(r>=5){flag('hospoda');return 'Hospodu koupíš na úvěr. Splácet budeš deset let, ale vydělává.'}if(r<=2){fx({money:-Math.round(s.money/2)});return 'Hospodu vydražíš, ale za dva roky zkrachuješ. Banka si vezme i polovinu úspor.'}return 'Někdo přihodil víc. Úvěr nakonec nepotřebuješ.'}},
+  {t:'Koupit svůj podnik přes známé',d:'Přímý prodej vedení podniku.',if:s=>s.f.nomenklatura||s.f.insider,go:s=>{flag('baron');fx({money:150,cons:-2,status:2});return 'Ministerstvo schválí tvůj privatizační projekt. Podnik koupíš za zlomek ceny, na úvěr od státní banky.'}},
+  {t:'Neúčastnit se',d:'',go:s=>'Hospodu koupí někdo jiný. Chodíš tam na pivo jako dřív.'}]},
+{id:'kupony',era:'priv',year:1992,title:'Kupónová knížka',
+ text:'Kupónová privatizace. Za tisíc korun si koupíš knížku s tisícem investičních bodů a za ně získáš akcie privatizovaných podniků. V televizi běží reklamy fondů, které slibují zbohatnutí.',
+ choices:[
+  {t:'Svěřit body fondu, který slibuje desetinásobek',d:'Kostka rozhodne.',roll:1,go:(s,r)=>{flag('kupony');fx({money:-1});if(r<=2)return 'Fond se vytuneluje a jeho majitel uteče do zahraničí. Z tvých bodů nezbude nic.';if(r<=5){fx({money:10});return 'Fond ti vyplatí slíbených deset tisíc. Koupíš si za ně automatickou pračku.'}fx({money:30});return 'Fond k překvapení všech funguje. Akcie prodáš se slušným ziskem.'}},
+  {t:'Investovat body sám',d:'Vybíráš podniky z novin. Kostka rozhodne.',roll:1,go:(s,r)=>{flag('kupony');fx({money:-1});if(r<=2)return 'Tvoje podniky zkrachují nebo je vytuneluje nové vedení. Akcie jsou bezcenné.';if(r<=4){fx({money:15});return 'Pár podniků vydrží. Akcie časem prodáš za rozumnou cenu.'}fx({money:45});return 'Trefíš pivovar a energetiku. Dividendy ti chodí dodnes.'}},
+  {t:'Akcie hned prodat',d:'Jistota.',go:s=>{flag('kupony');fx({money:7});return 'Akcie prodáš prvnímu zájemci a máš na dovolenou u moře.'}},
+  {t:'Knížku nekupovat',d:'',go:s=>'Nevěříš tomu. Za deset let budeš mít pravdu i nepravdu zároveň.'}]},
+{id:'osud90',era:'priv',year:1997,title:'Divoká devadesátá',
+ text:'Banky krachují, firmy se tunelují a z ciziny se vracejí restituenti. Na koho to padne, rozhodne kostka.',
+ choices:[{t:'Hodit kostkou',d:'Šest různých osudů.',roll:1,go:(s,r)=>{
+   if(r===1){fx({money:-Math.round(s.money*0.3)});return 'Tvoje banka zkrachovala. Pojištění vkladů ti vrátí jen část peněz.'}
+   if(r===2){if(s.f.hospoda){fx({money:-10});return 'Do hospody začnou chodit výběrčí „ochrany“. Platíš, nebo ti vymlátí okna.'}fx({money:-5});return 'Firmu, kde pracuješ, vytunelovali. Půl roku jsi na pracáku.'}
+   if(r===3)return 'Nic se nestane. I to je v devadesátých letech štěstí.';
+   if(r===4){flag('restituce');fx({money:50});return 'Restituce! Vrátí ti činžák po dědečkovi, který komunisté zabavili v roce 1948.'}
+   if(r===5){fx({money:20,status:1});return 'Rozjedeš obchod: dovážíš z Německa ojetá auta a prodáváš je dál.'}
+   fx({money:35});return 'Akcie, na které jsi zapomněl, najednou stojí za hodně.'}}]},
+
+{id:'volbydnes',era:'dnes',year:2025,title:'Volby dnes',vote:'voteNow',
+ enter:s=>{const inc=400+s.status*60+(s.f.hospoda?1200:0)+(s.f.baron?15000:0)+(s.f.politik?600:0)+(s.f.restituce?3000:0)+(s.f.emigrace&&!s.f.navrat?800:0)+s.money*3;s.income=inc;s.money+=inc},
+ text:s=>'Je ti skoro sedmdesát. Za posledních třicet let jsi naspořil dalších '+fmt(s.income)+' tisíc a teď máš '+fmt(s.money)+' tisíc korun. Jsou tu další volby a na lístcích zase nejsou jména, jen programy.',
+ choices:VOTENOW.map(([t,d])=>({t,d,go:s=>{s.voteNow=t;return 'Hodíš obálku do urny. Volíš stejně svobodně jako v roce 1990.'}}))},
+{id:'auto',era:'dnes',year:2025,title:'Co bude v garáži',
+ text:s=>'Staré auto doslouží. Máš '+fmt(s.money)+' tisíc korun. Co si koupíš?',
+ choices:[
+  ['Ojetý německý kombík z dovozu',250,'Najeto prý 140 tisíc.','Prodejce přísahá, že s ním jezdila jen babička do kostela.'],
+  ['Nová Škoda Octavia Combi',750,'Česká jistota.','Na parkovišti před panelákem jich stojí dalších dvanáct. Ta tvoje je ale nejnovější.'],
+  ['Elektromobil',1100,'Tichý a bez výfuku.','Soused se ptá, kde nabíjíš. Na chatě zatím přes prodlužovačku.'],
+  ['Velké prémiové SUV',2200,'Na sídlišti nezaparkuješ.','Na chatu vyjedeš i v zimě a sousedé si toho všimnou.'],
+  ['Žádné auto, jen tramvaj a kolo',0,'Senioři jezdí MHD zdarma.','Ušetřené peníze dáš vnoučatům.']
+ ].map(([t,c,d,r])=>({t,d:(c?fmt(c)+' tis. Kč · ':'')+d,can:s=>s.money>=c,why:'Na to nemáš. Chybí ti '+'{gap}'+' tisíc.',cost:c,go:s=>{fx({money:-c});s.car=t;return r}}))},
+{id:'dovolena',era:'dnes',year:2025,title:'Kam na dovolenou',
+ text:s=>'Léto. Zbývá ti '+fmt(s.money)+' tisíc korun. Kam pojedeš?',
+ choices:[
+  ['Na chatu u Sázavy',0,'Postavenou z cementu národního podniku.','Chata stojí dodnes. Ten cement byl kvalitní.',s=>s.f.chata],
+  ['Doma na zahrádce',0,'Rajčata a gril.','Grilování, sousedi přes plot a pivo ze sklepa.'],
+  ['Vysoké Tatry',25,'Jako za mlada.','Túra pod Rysy jako před padesáti lety. Jen se platí v eurech.'],
+  ['Lázně v Karlových Varech',45,'Kolonáda a oplatky.','Pramen, oplatky a procházky po kolonádě.'],
+  ['Chorvatsko',60,'Jako celý národ.','Dvanáct hodin v koloně u Mariboru a pak moře, které jsi poprvé viděl v Poreči.'],
+  ['Egypt, all inclusive',90,'Náramek na ruce.','U bazénu v Hurghadě slyšíš víc češtiny než doma na sídlišti.'],
+  ['Thajsko',180,'Kam se dřív nesmělo ani ve snu.','Letíš přes půl světa. Před čtyřiceti lety jsi nedostal výjezdní doložku ani do Maďarska.'],
+  ['Jachta v Karibiku',1500,'S obchodními partnery.','Na palubě se probírá další zakázka a kdo koho zná z dřívějška.']
+ ].map(([t,c,d,r,cond])=>({t,d:(c?fmt(c)+' tis. Kč · ':'zdarma · ')+d,if:cond,can:s=>s.money>=c,why:'Na to nemáš. Chybí ti {gap} tisíc.',cost:c,go:s=>{fx({money:-c});s.trip=t;return r}}))}
+];
+
+function fmt(n){return Math.round(n).toLocaleString('cs-CZ')}
+function eraIdx(k){return ERAS.findIndex(e=>e.k===k)}
+function cur(){return SC[S.i]}
+
+function renderEras(k){
+  const idx=k?eraIdx(k):-1;
+  document.getElementById('eras').innerHTML=ERAS.map((e,i)=>`<div class="era ${i<idx?'done':''} ${i===idx?'on '+e.k:''}"><b>${e.n}</b>${e.y}</div>`).join('');
+  document.body.dataset.era=k||'norm';
+}
+function bar(v){let h='';for(let i=0;i<10;i++)h+=`<i class="${i<v?'f':''}"></i>`;return `<div class="bar">${h}</div>`}
+function renderAside(){
+  const a=document.getElementById('aside');
+  if(!S){a.innerHTML=`<div class="full"><div class="idhead">Karta občana</div><div class="idname">Zatím prázdná</div></div><p class="full" style="margin:0;font-size:.9rem;color:var(--muted)">Tady uvidíš své postavení, svědomí, pozornost StB a úspory.</p>`;return}
+  const sc=cur(), postRev=sc?eraIdx(sc.era)>0:true, cz=sc&&eraIdx(sc.era)>=2?'Kč':'Kčs';
+  const fl=Object.keys(S.f).filter(k=>FLAGS[k]).map(k=>`<span class="flag">${FLAGS[k]}</span>`).join('');
+  a.innerHTML=`<div class="full"><div class="idhead">Karta občana</div><div class="idname">${esc(S.name)}</div></div>
+  <div class="stat"><div class="l"><span>Postavení</span><span>${S.status}</span></div>${bar(S.status)}</div>
+  <div class="stat"><div class="l"><span>Svědomí</span><span>${S.cons}</span></div>${bar(S.cons)}</div>
+  <div class="stat ${postRev?'off':''}"><div class="l"><span>Pozornost StB</span><span>${postRev?'archiv':S.risk}</span></div>${bar(postRev?0:S.risk)}</div>
+  <div class="stat"><div class="l"><span>Úspory</span><span>tis. ${cz}</span></div><div class="money">${fmt(S.money)}</div></div>
+  ${fl?`<div class="flags full">${fl}</div>`:''}`;
+}
+function esc(t){return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function dieHTML(n){const m={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]}[n]||[];let h='';for(let i=0;i<9;i++)h+=`<i class="${m.includes(i)?'p':''}"></i>`;return h}
+
+function renderStart(){
+  phase='start';S=null;renderEras(null);renderAside();
+  document.getElementById('card').innerHTML=`<div class="folio">Kádrový spis · založeno 1971</div><div class="stamp">1956</div>
+  <h2>Narodil ses v roce 1956</h2>
+  <p class="txt">Projdeš jeden český život: od školních let za normalizace přes listopad 1989 a divoká devadesátá léta až do dneška. Rozhoduješ se sám a o zbytku rozhodne kostka.</p>
+  <div class="start"><label for="nm">Jméno na kartě občana</label><input id="nm" value="Jan Novák" maxlength="30" autocomplete="off"></div>
+  <ul class="rules">
+    <li><b>Postavení</b> otevírá dveře: vysokou školu, kariéru, špičku společnosti.</li>
+    <li><b>Svědomí</b> ukazuje, s čím se budeš dívat do zrcadla.</li>
+    <li><b>Pozornost StB</b> roste s každým odvážným krokem. Když je vysoká, hrozí kriminál.</li>
+    <li><b>Úspory</b> rozhodnou v privatizaci a nakonec o autě a dovolené.</li>
+  </ul>
+  <button class="next" id="go">Začít v roce 1971</button>`;
+  const go=()=>{S=newState(document.getElementById('nm').value.trim());advance(0)};
+  document.getElementById('go').onclick=go;
+  document.getElementById('nm').onkeydown=e=>{if(e.key==='Enter')go()};
+}
+function advance(from){
+  let i=from;while(i<SC.length&&SC[i].if&&!SC[i].if(S))i++;
+  if(i>=SC.length){renderEnd();return}
+  S.i=i;S.res=null;phase='scene';renderScene();
+}
+function renderScene(){
+  const sc=cur();
+  if(sc.enter&&!S.entered[sc.id]){sc.enter(S);S.entered[sc.id]=1}
+  renderEras(sc.era);renderAside();
+  const vis=sc.choices.map((c,i)=>({c,i})).filter(({c})=>!c.if||c.if(S));
+  const n=S.log.length+1;
+  let html=`<div class="folio">Kádrový spis · list ${n} · ${ERAS[eraIdx(sc.era)].n}</div><div class="stamp">${sc.year}</div>
+  <h2>${sc.title}</h2><p class="txt">${val(sc.text)}</p><div class="choices ${S.res?'locked':''}" id="chs">`;
+  for(const {c,i} of vis){
+    const ok=!c.can||c.can(S);
+    let d=val(c.d)||'';
+    if(!ok)d=c.why.replace('{gap}',fmt((c.cost||20)-S.money));
+    html+=`<button class="ch ${S.res&&S.res.idx===i?'picked':''}" data-i="${i}" ${ok?'':'aria-disabled="true"'}><b>${c.t}</b>${d?`<small>${d}</small>`:''}</button>`;
+  }
+  html+=`</div><div id="resbox"></div>`;
+  document.getElementById('card').innerHTML=html;
+  document.querySelectorAll('#chs .ch').forEach(b=>b.onclick=()=>{if(b.getAttribute('aria-disabled')==='true'||busy||S.res)return;choose(+b.dataset.i,b)});
+  if(S.res)showRes(false);
+}
+function choose(i,btn){
+  const sc=cur(),c=sc.choices[i];CH=[];busy=true;
+  btn.classList.add('picked');document.getElementById('chs').classList.add('locked');
+  const finish=(r,mod)=>{
+    const t=r==null?null:r+mod;
+    const text=c.go(S,r,t);
+    S.log.push({y:sc.year,t:c.t,r:text});
+    S.res={idx:i,text,r,mod,ch:CH.slice()};busy=false;showRes(true);renderAside();
+  };
+  if(!c.roll){finish(null,0);return}
+  const mod=typeof c.roll==='function'?c.roll(S):0;
+  const box=document.getElementById('resbox');
+  box.innerHTML=`<div class="res"><div class="die spin" id="die">${dieHTML(1)}</div><div><div class="rollinfo">Kostka se kutálí…</div></div></div>`;
+  const die=document.getElementById('die');
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const r=1+Math.floor(Math.random()*6);
+  if(reduce){finish(r,mod);return}
+  let k=0;const iv=setInterval(()=>{die.innerHTML=dieHTML(1+Math.floor(Math.random()*6));if(++k>9){clearInterval(iv);finish(r,mod)}},70);
+}
+function showRes(focus){
+  const R=S.res,box=document.getElementById('resbox');
+  const chips=R.ch.map(([k,d])=>`<span class="chip ${d>0?'up':'down'}">${NAMES[k]} ${d>0?'+':'−'}${fmt(Math.abs(d))}</span>`).join('');
+  const info=R.r==null?'':`<div class="rollinfo">Padla ${R.r}${R.mod?` · s bonusem ${R.mod>0?'+':'−'}${Math.abs(R.mod)} = ${R.r+R.mod}`:''}</div>`;
+  const last=nextIndex()>=SC.length;
+  box.innerHTML=`<div class="res ${R.r==null?'nodie':''}">${R.r==null?'':`<div class="die">${dieHTML(R.r)}</div>`}<div>${info}<p>${R.text}</p>${chips?`<div class="chips">${chips}</div>`:''}<button class="next" id="nx">${last?'Zobrazit posudek':'Pokračovat'}</button></div></div>`;
+  const nx=document.getElementById('nx');nx.onclick=()=>advance(S.i+1);
+  if(focus)nx.focus({preventScroll:true});
+}
+function nextIndex(){let i=S.i+1;while(i<SC.length&&SC[i].if&&!SC[i].if(S))i++;return i}
+
+function verdict(s){const f=s.f;
+  if(f.baron)return ['Privatizační baron','Z nomenklatury rovnou do představenstva. Normalizace ti dala známé, devadesátky peníze.'];
+  if(f.odhalen)return ['Odhalený spolupracovník','Tvé krycí jméno si přečetli všichni. Sousedé zdraví jen někteří.'];
+  if(f.agent)return ['Spolupracovník, o kterém se neví','Svazek zmizel ve skartovačce. Co bylo v něm, víš jen ty.'];
+  if(f.charta&&f.kriminal)return ['Disident','Zaplatil jsi kotelnou a vězením. Tvůj podpis z roku 1977 platí dodnes.'];
+  if(f.charta)return ['Signatář Charty 77','Podepsal jsi, když to něco stálo.'];
+  if(f.emigrace&&f.navrat)return ['Navrátilec z exilu','Utekl jsi, a když to šlo, vrátil ses.'];
+  if(f.emigrace)return ['Exulant','Domov máš teď dva a v žádném nejsi úplně doma.'];
+  if(f.prevlekac)return ['Převlékač kabátů','Ve straně, když se to vyplácelo. Na Letné, když se to vyplácelo.'];
+  if(f.nomenklatura)return ['Nomenklaturní kádr','Na tribuně jsi stál, k velkým penězům ses nedostal.'];
+  if(f.kriminal)return ['Politický vězeň','Seděl jsi za to, že jsi chtěl žít jinak.'];
+  if(f.udavac)return ['Udavač, který zapomněl','Jednou jsi promluvil, když se mělo mlčet. Pavel si to pamatuje.'];
+  if(f.politik)return ['Polistopadový poslanec','Revoluce tě vynesla do parlamentu.'];
+  if(f.hospoda)return ['Hospodský z malé privatizace','Načepoval jsi celé devadesátky.'];
+  if(s.cons>=7)return ['Slušný člověk','Nic velkého jsi nezměnil, ale ani jsi nikomu neublížil.'];
+  if(s.cons<=3)return ['Člověk šedé zóny','Přizpůsobil ses každé době. Přežil jsi všechny.'];
+  return ['Obyčejný člověk','Tak trochu od všeho, jako většina.'];
+}
+function renderEnd(){
+  phase='end';renderEras('dnes');S.i=SC.length-1;renderAside();
+  const [v,why]=verdict(S);
+  const st=Object.keys(S.f).filter(k=>['charta','anti','ksc','agent','emigrace','kriminal','nomenklatura','udavac','baron','politik','hospoda','restituce','prevlekac','revoluce'].includes(k)).map(k=>`<span>${FLAGS[k]}</span>`).join('');
+  document.getElementById('card').innerHTML=`<div class="folio">Kádrový posudek · uzavřeno 2025</div><div class="stamp">2025</div>
+  <div class="idhead">Občan ${esc(S.name)}, nar. 1956</div>
+  <div class="verdict">${v}</div><p class="txt" style="margin-bottom:6px">${why}</p>
+  ${st?`<div class="bigstamps">${st}</div>`:''}
+  <dl class="rows">
+    <dt>Postavení</dt><dd>${S.status} z 10</dd>
+    <dt>Svědomí</dt><dd>${S.cons} z 10</dd>
+    <dt>Úspory</dt><dd>${fmt(S.money)} tisíc Kč</dd>
+    <dt>V garáži</dt><dd>${S.car||'nic'}</dd>
+    <dt>Dovolená</dt><dd>${S.trip||'žádná'}</dd>
+    <dt>Volby 1990</dt><dd>${S.vote90||'nevolil'}</dd>
+    <dt>Volby dnes</dt><dd>${S.voteNow||'nevolil'}</dd>
+  </dl>
+  <h3>Životopis</h3>
+  <ul class="log">${S.log.map(l=>`<li><span>${l.y}</span><div><b>${l.t}.</b> ${l.r}</div></li>`).join('')}</ul>
+  <button class="next" id="again">Žít znovu</button>`;
+  document.getElementById('again').onclick=renderStart;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function start(data){
+  if(data&&data.S){S=data.S;if(data.phase==='end'){renderEnd();return}if(data.phase==='scene'){renderScene();return}}
+  renderStart();
+}
+window.claude?.hot?.snapshot?.(()=>({S,phase}));
+window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
+</script>
+</body>
+</html>
